@@ -304,10 +304,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(frontendPath, 'login.html'));
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
 
 ///for message optoin
 // Message Schema
