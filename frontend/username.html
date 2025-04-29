@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Change Username</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    :root {
+      --primary-color: #fff;
+      --accent-color: #7C3AED;
+      --text-primary: #F8FAFC;
+      --glass-bg: rgba(42, 46, 53, 0.9);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      background: var(--primary-color);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(42, 46, 53, 0.9), rgba(34, 38, 44, 0.9));
+    }
+    .username-form {
+      background: var(--glass-bg);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+    .username-form h1 {
+      margin-bottom: 20px;
+      font-size: 2rem;
+    }
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #ccc;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .update-btn {
+      background: var(--accent-color);
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      width: 100%;
+    }
+    .update-btn:hover {
+      background: #6220c7;
+    }
+    .back-link {
+      margin-top: 15px;
+      display: block;
+      color: var(--accent-color);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="username-form">
+    <h1>Change Username</h1>
+    <form id="usernameForm">
+      <div class="form-group">
+        <label for="newUsername">New Username</label>
+        <input type="text" id="newUsername" placeholder="Enter new username" required>
+      </div>
+      <button type="submit" class="update-btn">Update Username</button>
+    </form>
+    <a href="profile.html" class="back-link">Back to Profile</a>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+      // For demo, load current username from localStorage profile data
+      const profileData = JSON.parse(localStorage.getItem('profile')) || { username: 'JohnDoe' };
+      document.getElementById('newUsername').value = profileData.username;
+    });
+    
+    document.getElementById('usernameForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const newUsername = document.getElementById('newUsername').value;
+      // For demo, update the username in localStorage profile data
+      const profileData = JSON.parse(localStorage.getItem('profile')) || {};
+      profileData.username = newUsername;
+      localStorage.setItem('profile', JSON.stringify(profileData));
+      alert('Username updated successfully!');
+      window.location.href = 'profile.html';
+    });
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>

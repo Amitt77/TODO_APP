@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create / Edit Task</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #1a1a1a;
+      --accent-color: #7C3AED;
+      --text-primary: #F8FAFC;
+      --glass-bg: rgba(30, 30, 30, 0.95);
+      --gradient: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      background: var(--primary-color);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background-image: radial-gradient(circle at 50% 50%, rgba(124,58,237,0.1) 0%, transparent 100%);
+    }
+    .task-container {
+      max-width: 800px;
+      width: 90%;
+      margin: 2rem auto;
+      padding: 2.5rem;
+      background: var(--glass-bg);
+      border-radius: 1.5rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      transform: translateY(20px);
+      opacity: 0;
+      animation: slideIn 0.6s cubic-bezier(0.23,1,0.32,1) forwards;
+    }
+    @keyframes slideIn {
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .task-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .task-header h1 {
+      font-size: 2rem;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .back-btn {
+      background: var(--gradient);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .back-btn::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.1) 50%, transparent 75%);
+      transform: rotate(45deg);
+      transition: all 0.5s ease;
+    }
+    .back-btn:hover::after { left: 50%; }
+    .task-form { display: grid; gap: 2rem; }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      position: relative;
+    }
+    .form-group label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.8);
+      padding-left: 0.5rem;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      padding: 1rem 1.25rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 0.75rem;
+      color: var(--text-primary);
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+      background: rgba(255,255,255,0.05);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+    }
+    .submit-btn {
+      background: var(--gradient);
+      color: white;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+    .submit-btn::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.1) 50%, transparent 75%);
+      transform: rotate(45deg);
+      transition: all 0.5s ease;
+    }
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+    }
+    .submit-btn:hover::after { left: 50%; }
+    /* Custom Select Arrow */
+    .form-group select {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237C3AED' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      background-size: 1em;
+    }
+    /* Custom Date Picker Icon */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.6);
+      cursor: pointer;
+    }
+    /* Image Upload Styling */
+    .form-group input[type="file"] {
+      padding: 1rem 1.25rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 0.75rem;
+      color: var(--text-primary);
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+    .form-group input[type="file"]:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+      background: rgba(255,255,255,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="task-container">
+    <div class="task-header">
+      <h1 id="pageTitle"><i class="fa-solid fa-plus"></i> Create Task</h1>
+      <a href="dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back</a>
+    </div>
+    <form id="taskForm" class="task-form">
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" id="title" placeholder="Title" required>
+      </div>
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" placeholder="Description" required></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="dueDate">Due Date</label>
+          <input type="date" id="dueDate" required>
+        </div>
+        <div class="form-group">
+          <label for="priority">Priority</label>
+          <select id="priority" required>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+      <!-- Image Upload Field -->
+      <div class="form-group">
+        <label for="imageUpload">Upload Image</label>
+        <input type="file" id="imageUpload" accept="image/*">
+      </div>
+      <button type="submit" class="submit-btn" id="submitBtn">Create Task</button>
+    </form>
+  </div>
+
+  <script>
+    // Ensure the user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = 'login.html';
+    }
+
+    // Get the taskId from the URL (if present, we're in edit mode)
+    const params = new URLSearchParams(window.location.search);
+    const taskId = params.get('taskId');
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      if (taskId) {
+        // Switch to edit mode: update header and button text
+        document.getElementById('pageTitle').innerHTML = '<i class="fa-solid fa-edit"></i> Update Task';
+        document.getElementById('submitBtn').textContent = 'Update Task';
+        try {
+          const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+            headers: { 'Authorization': token }
+          });
+          if (response.ok) {
+            const task = await response.json();
+            document.getElementById('title').value = task.title || '';
+            document.getElementById('description').value = task.description || '';
+            if (task.dueDate) {
+              document.getElementById('dueDate').value = new Date(task.dueDate).toISOString().split('T')[0];
+            }
+            document.getElementById('priority').value = task.priority || 'low';
+          } else {
+            console.error('Failed to fetch task data for editing:', response.statusText);
+          }
+        } catch (error) {
+          console.error('Error fetching task data:', error);
+        }
+      }
+    });
+
+    // Handle form submission (both create and update)
+    document.getElementById('taskForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      // Create a FormData object to handle file upload
+      const formData = new FormData();
+      formData.append('title', document.getElementById('title').value);
+      formData.append('description', document.getElementById('description').value);
+      formData.append('dueDate', document.getElementById('dueDate').value);
+      formData.append('priority', document.getElementById('priority').value);
+
+      // Append the image file if selected
+      const imageFile = document.getElementById('imageUpload').files[0];
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+
+      // Determine endpoint and method based on mode
+      const url = taskId ? `http://localhost:5000/api/tasks/${taskId}` : 'http://localhost:5000/api/tasks';
+      const method = taskId ? 'PUT' : 'POST';
+
+      try {
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Authorization': token
+          },
+          body: formData
+        });
+        if (response.ok) {
+          window.location.href = 'dashboard.html';
+        } else {
+          alert('Failed to submit task.');
+        }
+      } catch (error) {
+        console.error('Error submitting task:', error);
+        alert('Error submitting task.');
+      }
+    });
+  </script>
+</body>
+</html>

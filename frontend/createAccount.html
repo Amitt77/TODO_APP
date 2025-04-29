@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* CSS Variables */
+    :root {
+      --primary-gradient: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%);
+      --accent-color: #FF6B6B;
+      --glass-bg: rgba(255, 255, 255, 0.95);
+    }
+
+    /* Base Styles */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--primary-gradient);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* Optional: Particle styles (if you plan to animate particles) */
+    .particle {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /* Signup Container */
+    .signup-container {
+      position: relative;
+      z-index: 1;
+      width: 440px;
+      padding: 40px;
+      background: var(--glass-bg);
+      border-radius: 30px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(15px);
+      animation: slideUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* Header */
+    .signup-container h1 {
+      text-align: center;
+      font-size: 2.5em;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 25px;
+    }
+
+    /* Input Fields */
+    .signup-container input {
+      width: 100%;
+      padding: 18px 20px;
+      margin-bottom: 25px;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.9);
+    }
+    .signup-container input:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 10px rgba(255, 107, 107, 0.3);
+      outline: none;
+    }
+
+    /* Button */
+    .signup-container button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      background-color: #4A00E0;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .signup-container button:hover {
+      background-color: #8E2DE2;
+    }
+
+    /* Error Message */
+    .error-message {
+      color: #ff4757;
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+      display: none;
+    }
+
+    /* Link */
+    .signup-container p {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+    }
+    .signup-container a {
+      color: var(--accent-color);
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="signup-container">
+    <h1>Create Account</h1>
+    <form id="signupForm">
+      <input type="text" id="username" placeholder="Username" required>
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Create Account</button>
+      <div id="errorMessage" class="error-message">Registration failed. Please try again.</div>
+    </form>
+    <p>Already have an account? <a href="login.html">Login</a></p>
+  </div>
+
+  <script>
+    document.getElementById('signupForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const response = await fetch('http://localhost:5000/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, email, password }),
+        });
+
+        if (response.ok) {
+          window.location.href = 'login.html';
+        } else {
+          document.getElementById('errorMessage').style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        document.getElementById('errorMessage').style.display = 'block';
+      }
+    });
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>

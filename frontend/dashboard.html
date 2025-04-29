@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    :root {
+      --primary-color: #fff;
+      --accent-color: #7C3AED;
+      --text-primary: #F8FAFC;
+      --glass-bg: rgba(42, 46, 53, 0.9);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      background: var(--primary-color);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+    /* Sidebar Styles */
+    .sidebar {
+      background: var(--glass-bg);
+      backdrop-filter: blur(15px);
+      padding: 30px;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 40px;
+      color: var(--text-primary);
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-color);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+    }
+    .nav-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .nav-item {
+      padding: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-primary);
+    }
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .nav-item.active {
+      background: var(--accent-color);
+      box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+    }
+    /* Main Content Area */
+    .main-content {
+      padding: 40px;
+      background: linear-gradient(135deg, rgba(42, 46, 53, 0.9), rgba(34, 38, 44, 0.9));
+      overflow-y: auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+    .header h1 {
+      font-size: 2rem;
+    }
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--accent-color);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+    .avatar:hover {
+      transform: scale(1.05);
+    }
+    .logout-btn {
+      background: var(--accent-color);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      margin-left: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      font-size: 0.9rem;
+    }
+    .logout-btn:hover {
+      background: #6220c7;
+    }
+    /* Tabs Navigation */
+    .tabs-container {
+      margin-bottom: 30px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 10px;
+    }
+    .tab-nav {
+      display: flex;
+      gap: 20px;
+    }
+    .tab-btn {
+      padding: 12px 0;
+      background: none;
+      border: none;
+      color: #94A3B8;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+    }
+    .tab-btn.active {
+      color: var(--text-primary);
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--accent-color);
+      border-radius: 2px;
+    }
+    /* Todo Grid */
+    .todo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .todo-card {
+      background: var(--glass-bg);
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    .todo-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .todo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .todo-header h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0;
+    }
+    .todo-status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: capitalize;
+    }
+    .status-in-progress {
+      background: rgba(255, 193, 7, 0.15);
+      color: #FFC107;
+    }
+    .status-completed {
+      background: rgba(40, 167, 69, 0.15);
+      color: #28a745;
+    }
+    .status-expired {
+      background: rgba(220, 53, 69, 0.15);
+      color: #dc3545;
+    }
+    .todo-date {
+      color: #94A3B8;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .todo-content p {
+      color: #94A3B8;
+      line-height: 1.5;
+    }
+    .todo-actions {
+      margin-top: 16px;
+      display: flex;
+      gap: 8px;
+    }
+    .todo-actions button {
+      background: var(--accent-color);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      font-size: 0.9rem;
+    }
+    .todo-actions button:hover {
+      background: #6220c7;
+    }
+    .create-btn {
+      margin-top: 30px;
+      background: var(--accent-color);
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+    }
+    .create-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
+    }
+    /* Image Preview */
+.image-preview {
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+.image-preview img {
+  width: 100%;
+  max-width: 200px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.image-preview img:hover {
+  transform: scale(1.05);
+}
+
+/* Image Modal */
+.image-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.image-modal img {
+  max-width: 90%;
+  max-height: 90%;
+  border-radius: 12px;
+}
+
+.close-modal {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  color: white;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.close-modal:hover {
+  color: var(--accent-color);
+}
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-check"></i></div>
+        <span>TODO Home</span>
+      </div>
+      <ul class="nav-menu">
+        <li class="nav-item active" onclick="location.href='dashboard.html'">
+          <i class="fa-solid fa-house"></i>
+          <span>Dashboard</span>
+        </li>
+        <li class="nav-item" onclick="location.href='tasks.html'">
+          <i class="fa-solid fa-tasks"></i>
+          <span>Tasks</span>
+        </li>
+        <li class="nav-item" onclick="location.href='profile.html'">
+          <i class="fa-solid fa-user"></i>
+          <span>Profile</span>
+        </li>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="header">
+        <h1>Dashboard</h1>
+        <div class="user-profile">
+          <div class="avatar"><i class="fa-solid fa-user"></i></div>
+          <span id="displayUsername">Loading...</span>
+          <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+      </div>
+
+      <!-- Tabs for Filtering -->
+      <div class="tabs-container">
+        <div class="tab-nav">
+          <button class="tab-btn active" data-tab="all">All</button>
+          <button class="tab-btn" data-tab="in-progress">In Progress</button>
+          <button class="tab-btn" data-tab="completed">Completed</button>
+          <button class="tab-btn" data-tab="expired">Expired</button>
+        </div>
+      </div>
+
+      <!-- Tasks Grid -->
+      <div id="tasks" class="todo-grid"></div>
+
+      <!-- Create Task Button -->
+      <button class="create-btn" onclick="window.location.href='createTask.html'">
+        <i class="fa-solid fa-plus"></i>
+        <span>Create Task</span>
+      </button>
+    </main>
+  </div>
+
+  <script>
+    // Logout function
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = 'login.html';
+    }
+
+    // Fetch user info from backend to set username
+    async function fetchUser() {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch('http://localhost:5000/api/user', {
+          headers: { 'Authorization': token }
+        });
+        if (response.ok) {
+          const user = await response.json();
+          document.getElementById('displayUsername').textContent = user.username;
+        } else {
+          console.error('Failed to fetch user info.');
+          document.getElementById('displayUsername').textContent = 'User';
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    }
+
+    // Helper function to map status to CSS class
+    function getStatusClass(status) {
+      const s = status.toLowerCase();
+      if (s === 'in progress' || s === 'pending') return 'status-in-progress';
+      if (s === 'completed') return 'status-completed';
+      if (s === 'expired') return 'status-expired';
+      return '';
+    }
+
+    // Task rendering functions
+    let tasksData = [];
+    async function fetchTasks() {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch('http://localhost:5000/api/tasks', {
+          headers: { 'Authorization': token }
+        });
+        if (response.ok) {
+          tasksData = await response.json();
+          renderTasks('all');
+        }
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      }
+    }
+
+    function renderTasks(filter) {
+      const tasksContainer = document.getElementById('tasks');
+      let filteredTasks = tasksData;
+      if (filter !== 'all') {
+        filteredTasks = tasksData.filter(task => {
+          const status = task.status.toLowerCase();
+          if (filter === 'in-progress') {
+            return status === 'in progress' || status === 'pending';
+          }
+          return status === filter;
+        });
+      }
+      if (filteredTasks.length === 0) {
+        tasksContainer.innerHTML = `<p style="color:#94A3B8; grid-column: 1/-1; text-align:center;">No tasks found.</p>`;
+        return;
+      }
+      tasksContainer.innerHTML = filteredTasks.map(task => `
+        <div class="todo-card">
+  <div class="todo-header">
+    <h3>${task.title}</h3>
+    <span class="todo-status ${getStatusClass(task.status)}">${task.status}</span>
+  </div>
+  <div class="todo-date">Due: ${new Date(task.dueDate).toLocaleDateString()}</div>
+  <div class="todo-content">
+    <p>${task.description}</p>
+    ${task.image ? `
+      <div class="image-preview" onclick="openImageModal('${task.image}')">
+        <img src="http://localhost:5000/${task.image}" alt="Task Image" />
+      </div>
+    ` : ''}
+  </div>
+  <div class="todo-actions">
+    <button onclick="editTask('${task._id}')">Edit</button>
+    <button onclick="deleteTask('${task._id}')">Delete</button>
+    ${(task.status.toLowerCase() === 'pending' || task.status.toLowerCase() === 'in progress') ?
+      `<button onclick="markCompleted('${task._id}')">Mark Completed</button>` : ''}
+  </div>
+</div>
+<!-- Image Modal -->
+<div id="imageModal" class="image-modal">
+  <span class="close-modal" onclick="closeImageModal()">&times;</span>
+  <img id="modalImage" src="" alt="Task Image Preview" />
+</div>
+      `).join('');
+    }
+
+    // Edit task: redirect to createTask.html with taskId parameter
+    function editTask(taskId) {
+      window.location.href = `createTask.html?taskId=${taskId}`;
+    }
+
+    // Delete task function
+    async function deleteTask(taskId) {
+      const token = localStorage.getItem('token');
+      try {
+        await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': token }
+        });
+        tasksData = tasksData.filter(task => task._id !== taskId);
+        const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+        renderTasks(activeTab);
+      } catch (error) {
+        console.error('Error deleting task:', error);
+      }
+    }
+
+    // Mark task as completed
+    async function markCompleted(taskId) {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token
+          },
+          body: JSON.stringify({ status: 'completed' })
+        });
+        if (response.ok) {
+          tasksData = tasksData.map(task =>
+            task._id === taskId ? { ...task, status: 'completed' } : task
+          );
+          const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+          renderTasks(activeTab);
+        } else {
+          alert('Failed to update task status.');
+        }
+      } catch (error) {
+        console.error('Error updating task status:', error);
+        alert('Error updating task status.');
+      }
+    }
+
+    // Initialize dashboard: fetch user info, tasks, and setup tabs
+    document.addEventListener('DOMContentLoaded', function() {
+      fetchUser();
+      fetchTasks();
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+          this.classList.add('active');
+          const filter = this.getAttribute('data-tab');
+          renderTasks(filter);
+        });
+      });
+    });
+    //image preview
+    // Open image modal
+function openImageModal(imageUrl) {
+  const modal = document.getElementById('imageModal');
+  const modalImage = document.getElementById('modalImage');
+  modalImage.src = `http://localhost:5000/${imageUrl}`;
+  modal.style.display = 'flex';
+}
+
+// Close image modal
+function closeImageModal() {
+  const modal = document.getElementById('imageModal');
+  modal.style.display = 'none';
+}
+  </script>
+</body>
+</html>

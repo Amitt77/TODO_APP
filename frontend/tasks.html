@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tasks</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    :root {
+      --primary-color: #fff;
+      --accent-color: #7C3AED;
+      --text-primary: #F8FAFC;
+      --glass-bg: rgba(42, 46, 53, 0.9);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+    }
+    body {
+      background: var(--primary-color);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+    /* Sidebar Styles */
+    .sidebar {
+      background: var(--glass-bg);
+      backdrop-filter: blur(15px);
+      padding: 30px;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 40px;
+      color: var(--text-primary);
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-color);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+    }
+    .nav-menu {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .nav-item {
+      padding: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-primary);
+    }
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .nav-item.active {
+      background: var(--accent-color);
+      box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+    }
+    /* Main Content */
+    .main-content {
+      padding: 40px;
+      background: linear-gradient(135deg, rgba(42, 46, 53, 0.9), rgba(34, 38, 44, 0.9));
+      overflow-y: auto;
+    }
+    .header {
+      margin-bottom: 40px;
+    }
+    .header h1 {
+      font-size: 2rem;
+    }
+    /* Task List Styles */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .task-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+    .task-heading span {
+      flex: 1;
+      text-align: center;
+    }
+    .task-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: var(--glass-bg);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .task-row:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    .task-row:hover .task-description-preview {
+      display: block;
+    }
+    .task-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+    }
+    .task-title {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      flex: 1;
+      text-align: left;
+    }
+    .task-status {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-transform: capitalize;
+      flex: 1;
+      text-align: center;
+    }
+    .task-priority {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-transform: capitalize;
+      flex: 1;
+      text-align: center;
+    }
+    .task-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      justify-content: flex-end;
+    }
+    .task-actions button {
+      background: var(--accent-color);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      font-size: 0.8rem;
+    }
+    .task-actions button:hover {
+      background: #6220c7;
+    }
+    .view-details-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .view-details-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    /* Hover Preview */
+    .task-description-preview {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      background: var(--glass-bg);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 10;
+      margin-top: 8px;
+    }
+    .task-description-preview p {
+      color: #94A3B8;
+      line-height: 1.5;
+    }
+    .task-description-preview img {
+      width: 100%;
+      max-width: 200px;
+      border-radius: 8px;
+      margin-top: 12px;
+    }
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: var(--glass-bg);
+      padding: 24px;
+      border-radius: 16px;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+    }
+    .modal-content img {
+      width: 100%;
+      max-width: 300px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .modal-content h3 {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+    }
+    .modal-content p {
+      color: #94A3B8;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .modal-content .task-date {
+      color: #94A3B8;
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+    .modal-content .task-status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-transform: capitalize;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+    .close-modal {
+      background: var(--accent-color);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .close-modal:hover {
+      background: #6220c7;
+    }
+    :root {
+  --primary-color: #1a1a1a;
+  --accent-color: #7C3AED;
+  --text-primary: #F8FAFC;
+  --glass-bg: rgba(42, 46, 53, 0.9);
+  --gradient: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%);
+  --green-gradient: linear-gradient(135deg, #28a745 0%, #4CAF50 100%);
+}
+
+body {
+  background: var(--primary-color);
+  color: var(--text-primary);
+  min-height: 100vh;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+.dashboard-container {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+/* Sidebar Styles */
+.sidebar {
+  background: var(--glass-bg);
+  backdrop-filter: blur(15px);
+  padding: 30px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.brand-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--gradient);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+}
+
+.nav-menu {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nav-item {
+  padding: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary);
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-item.active {
+  background: var(--gradient);
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+}
+
+/* Main Content */
+.main-content {
+  padding: 40px;
+  background: var(--primary-color);
+  overflow-y: auto;
+}
+
+.header {
+  margin-bottom: 40px;
+}
+
+.header h1 {
+  font-size: 2rem;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Task List Styles */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.task-heading span {
+  flex: 1;
+  text-align: center;
+}
+
+.task-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: var(--glass-bg);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  cursor: pointer;
+}
+
+.task-row:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.task-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.task-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+  text-align: left;
+}
+
+.task-status {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  flex: 1;
+  text-align: center;
+}
+
+.task-priority {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  flex: 1;
+  text-align: center;
+}
+
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.task-actions button {
+  background: var(--gradient);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.task-actions button:hover {
+  background: var(--green-gradient);
+}
+
+/* Hover Details Card */
+.hover-details {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--glass-bg);
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  width: 400px;
+  max-width: 90%;
+}
+
+.hover-content h3 {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hover-content p {
+  color: #94A3B8;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.hover-content img {
+  width: 100%;
+  max-width: 300px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <span>TODO Tasks</span>
+      </div>
+      <ul class="nav-menu">
+        <li class="nav-item" onclick="location.href='dashboard.html'">
+          <i class="fa-solid fa-house"></i>
+          <span>Dashboard</span>
+        </li>
+        <li class="nav-item active" onclick="location.href='tasks.html'">
+          <i class="fa-solid fa-tasks"></i>
+          <span>Tasks</span>
+        </li>
+        <li class="nav-item" onclick="location.href='profile.html'">
+          <i class="fa-solid fa-user"></i>
+          <span>Profile</span>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="header">
+        <h1>Tasks</h1>
+      </div>
+      <div id="tasks" class="task-list">
+        <!-- Heading Row -->
+        <div class="task-heading">
+          <span>Task Name</span>
+          <span>Status</span>
+          <span>Priority</span>
+          <span>Actions</span>
+        </div>
+        <!-- Task rows will be injected here -->
+      </div>
+      
+      <!-- Hover Details Card -->
+      <div id="hoverDetails" class="hover-details">
+        <div class="hover-content">
+          <h3 id="hoverTitle"></h3>
+          <p id="hoverDescription"></p>
+          <img id="hoverImage" src="" alt="Task Image" />
+          <h3 id="hoverStatus"></h3>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let tasksData = [];
+    // Helper functions
+    function getStatusClass(status) {
+      const s = status.toLowerCase();
+      if (s === 'in progress' || s === 'pending') return 'status-in-progress';
+      if (s === 'completed') return 'status-completed';
+      if (s === 'expired') return 'status-expired';
+      return '';
+    }
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    }
+    function renderTasks() {
+  const tasksContainer = document.getElementById('tasks');
+  if (tasksData.length === 0) {
+    tasksContainer.innerHTML = `<p style="color:#94A3B8; text-align:center;">No tasks found.</p>`;
+    return;
+  }
+  tasksContainer.innerHTML = `
+    <div class="task-heading">
+      <span>Task Name</span>
+      <span>Status</span>
+      <span>Priority</span>
+      <span>Actions</span>
+    </div>
+    ${tasksData.map(task => `
+      <div class="task-row" onmouseenter="showHoverDetails('${task._id}')" onmouseleave="hideHoverDetails()">
+        <div class="task-info">
+          <span class="task-title">${task.title}</span>
+          <span class="task-status ${getStatusClass(task.status)}">${task.status}</span>
+          <span class="task-priority">${task.priority}</span>
+        </div>
+        <div class="task-actions">
+          <button onclick="editTask('${task._id}')">Edit</button>
+          <button onclick="deleteTask('${task._id}')">Delete</button>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+// Show Hover Details
+function showHoverDetails(taskId) {
+  const task = tasksData.find(task => task._id === taskId);
+  if (!task) return;
+
+  const hoverDetails = document.getElementById('hoverDetails');
+  const hoverTitle = document.getElementById('hoverTitle');
+  const hoverDescription = document.getElementById('hoverDescription');
+  const hoverImage = document.getElementById('hoverImage');
+  const hoverStatus = document.getElementById('hoverStatus');
+
+  hoverTitle.textContent = task.title;
+  hoverDescription.textContent = task.description;
+  hoverImage.src = task.image ? `http://localhost:5000/${task.image}` : '';
+  hoverDetails.style.display = 'block';
+  hoverStatus.textContent = task.status;
+}
+
+// Hide Hover Details
+function hideHoverDetails() {
+  const hoverDetails = document.getElementById('hoverDetails');
+  hoverDetails.style.display = 'none';
+}
+    document.addEventListener('DOMContentLoaded', async function () {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = 'createTask.html';
+        return;
+      }
+      try {
+        const response = await fetch('http://localhost:5000/api/tasks', {
+          headers: {
+            'Authorization': token,
+          },
+        });
+        tasksData = await response.json();
+        renderTasks();
+      } catch (error) {
+        console.error(error);
+      }
+    });
+    async function deleteTask(taskId) {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': token,
+        },
+      });
+      tasksData = tasksData.filter(task => task._id !== taskId);
+      renderTasks();
+    }
+    function editTask(taskId) {
+      window.location.href = `editTask.html?taskId=${taskId}`;
+    }
+    // Open Task Modal
+    function openTaskModal(taskId) {
+      const task = tasksData.find(task => task._id === taskId);
+      if (!task) return;
+
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <h3>${task.title}</h3>
+          <p>${task.description}</p>
+          ${task.image ? `<img src="http://localhost:5000/${task.image}" alt="Task Image" />` : ''}
+          <div class="task-date">Due: ${formatDate(task.dueDate)}</div>
+          <div class="task-status ${getStatusClass(task.status)}">${task.status}</div>
+          <button class="close-modal" onclick="closeTaskModal()">Close</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.style.display = 'flex';
+    }
+    // Close Task Modal
+    function closeTaskModal() {
+      const modal = document.querySelector('.modal');
+      if (modal) {
+        modal.remove();
+      }
+    }
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
