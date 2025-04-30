@@ -1,192 +1,487 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create / Edit Task</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --primary-color: #1a1a1a;
-      --accent-color: #7C3AED;
-      --text-primary: #F8FAFC;
-      --glass-bg: rgba(30, 30, 30, 0.95);
-      --gradient: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%);
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #a5b4fc;
+      --primary-lightest: #eef2ff;
+      --accent: #8b5cf6;
+      --bg-light: #f9fafb;
+      --bg-white: #ffffff;
+      --text-dark: #1e293b;
+      --text-muted: #64748b;
+      --border-light: #e2e8f0;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+
+      /* Priority colors */
+      --low-color: #22c55e;
+      --medium-color: #f59e0b;
+      --high-color: #ef4444;
     }
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Outfit', sans-serif;
     }
+
     body {
-      background: var(--primary-color);
-      color: var(--text-primary);
+      background-color: var(--bg-light);
+      color: var(--text-dark);
       min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background-image: radial-gradient(circle at 50% 50%, rgba(124,58,237,0.1) 0%, transparent 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
     }
+
     .task-container {
       max-width: 800px;
-      width: 90%;
-      margin: 2rem auto;
-      padding: 2.5rem;
-      background: var(--glass-bg);
-      border-radius: 1.5rem;
-      border: 1px solid rgba(255,255,255,0.1);
-      backdrop-filter: blur(20px);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      width: 100%;
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
       transform: translateY(20px);
       opacity: 0;
-      animation: slideIn 0.6s cubic-bezier(0.23,1,0.32,1) forwards;
+      animation: slideIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
     }
+
     @keyframes slideIn {
-      to { transform: translateY(0); opacity: 1; }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
+
     .task-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 2.5rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 24px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
     }
+
     .task-header h1 {
-      font-size: 2rem;
-      background: var(--gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-size: 24px;
+      font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 12px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
+
     .back-btn {
-      background: var(--gradient);
-      color: white;
-      padding: 0.75rem 1.5rem;
+      background: white;
+      color: var(--primary);
+      padding: 10px 18px;
       border: none;
-      border-radius: 0.75rem;
+      border-radius: var(--radius-sm);
       cursor: pointer;
       transition: all 0.3s ease;
       text-decoration: none;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      position: relative;
-      overflow: hidden;
-    }
-    .back-btn::after {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.1) 50%, transparent 75%);
-      transform: rotate(45deg);
-      transition: all 0.5s ease;
-    }
-    .back-btn:hover::after { left: 50%; }
-    .task-form { display: grid; gap: 2rem; }
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      position: relative;
-    }
-    .form-group label {
-      font-size: 0.9rem;
+      gap: 8px;
       font-weight: 500;
-      color: rgba(255,255,255,0.8);
-      padding-left: 0.5rem;
+      font-size: 14px;
+      box-shadow: var(--shadow-sm);
     }
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-      padding: 1rem 1.25rem;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 0.75rem;
-      color: var(--text-primary);
-      font-size: 1rem;
-      transition: all 0.3s ease;
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.9);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-    .form-group input:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
-      border-color: var(--accent-color);
-      box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
-      background: rgba(255,255,255,0.05);
+
+    .task-form {
+      padding: 32px;
     }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 500;
+      color: var(--text-dark);
+      font-size: 15px;
+      position: relative;
+      padding-left: 24px;
+    }
+
+    .form-group label i {
+      position: absolute;
+      left: 0;
+      top: 2px;
+      color: var(--primary);
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      color: var(--text-dark);
+      transition: all 0.2s;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    textarea.form-control {
+      min-height: 120px;
+      resize: vertical;
+    }
+
     .form-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 2rem;
+      gap: 24px;
     }
-    .submit-btn {
-      background: var(--gradient);
-      color: white;
-      padding: 1rem 2rem;
-      border: none;
-      border-radius: 0.75rem;
+
+    /* Enhanced Select Styling */
+    .custom-select-wrapper {
+      position: relative;
+    }
+
+    select.form-control {
+      appearance: none;
+      padding-right: 40px;
       cursor: pointer;
-      font-size: 1rem;
+    }
+
+    .select-icon {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--primary);
+      font-size: 16px;
+    }
+
+    /* Priority Selection */
+    .priority-options {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .priority-option {
+      flex: 1;
+      position: relative;
+    }
+
+    .priority-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .priority-option label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 8px;
+      background: white;
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .priority-option input[type="radio"]:checked+label {
+      border-color: currentColor;
+      background-color: rgba(var(--current-color-rgb), 0.1);
+    }
+
+    .priority-option:nth-child(1) label {
+      color: var(--low-color);
+      --current-color-rgb: 34, 197, 94;
+    }
+
+    .priority-option:nth-child(2) label {
+      color: var(--medium-color);
+      --current-color-rgb: 245, 158, 11;
+    }
+
+    .priority-option:nth-child(3) label {
+      color: var(--high-color);
+      --current-color-rgb: 239, 68, 68;
+    }
+
+    .priority-icon {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    /* Status Selection */
+    .status-options {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .status-option {
+      flex: 1;
+      position: relative;
+    }
+
+    .status-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .status-option label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 8px;
+      background: white;
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .status-option input[type="radio"]:checked+label {
+      border-color: var(--primary);
+      background-color: var(--primary-lightest);
+      color: var(--primary-dark);
+    }
+
+    .status-icon {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    /* Custom date picker styling */
+    .date-wrapper {
+      position: relative;
+    }
+
+    input[type="date"].form-control {
+      appearance: none;
+      padding-right: 16px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      color: var(--text-muted);
+      cursor: pointer;
+      position: absolute;
+      right: 12px;
+      height: 20px;
+      width: 20px;
+    }
+
+    .date-icon {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--primary);
+      font-size: 16px;
+      z-index: 1;
+    }
+
+    /* File upload styling */
+    .file-upload-wrapper {
+      position: relative;
+      padding: 20px;
+      border: 2px dashed var(--border-light);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .file-upload-wrapper:hover {
+      border-color: var(--primary);
+    }
+
+    .file-upload-icon {
+      font-size: 32px;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .file-upload-text {
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .file-upload-note {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    input[type="file"].form-control {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .file-name {
+      margin-top: 8px;
+      font-size: 14px;
+      color: var(--primary);
+      display: none;
+    }
+
+    .submit-btn {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 16px 24px;
+      border: none;
+      border-radius: var(--radius-sm);
       font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
       transition: all 0.3s ease;
       width: 100%;
+      margin-top: 16px;
+      box-shadow: var(--shadow-md);
       position: relative;
       overflow: hidden;
-      margin-top: 1rem;
     }
+
     .submit-btn::after {
       content: '';
       position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.1) 50%, transparent 75%);
-      transform: rotate(45deg);
-      transition: all 0.5s ease;
-    }
-    .submit-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
-    }
-    .submit-btn:hover::after { left: 50%; }
-    /* Custom Select Arrow */
-    .form-group select {
-      appearance: none;
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237C3AED' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-      background-repeat: no-repeat;
-      background-position: right 1rem center;
-      background-size: 1em;
-    }
-    /* Custom Date Picker Icon */
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      filter: invert(0.6);
-      cursor: pointer;
-    }
-    /* Image Upload Styling */
-    .form-group input[type="file"] {
-      padding: 1rem 1.25rem;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 0.75rem;
-      color: var(--text-primary);
-      font-size: 1rem;
-      transition: all 0.3s ease;
+      top: 0;
+      left: -100%;
       width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: 0.5s;
     }
-    .form-group input[type="file"]:focus {
-      border-color: var(--accent-color);
-      box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
-      background: rgba(255,255,255,0.05);
+
+    .submit-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .submit-btn:hover::after {
+      left: 100%;
+    }
+
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.9);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+    }
+
+    .spinner-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(99, 102, 241, 0.2);
+      border-radius: 50%;
+      border-top-color: var(--primary);
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    .loading-text {
+      margin-top: 12px;
+      font-weight: 500;
+      color: var(--primary);
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .task-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .back-btn {
+        align-self: flex-end;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .task-form {
+        padding: 24px 16px;
+      }
+
+      .priority-options,
+      .status-options {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
+
 <body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner-container">
+      <div class="spinner"></div>
+      <div class="loading-text">Processing your task...</div>
+    </div>
+  </div>
+
   <div class="task-container">
     <div class="task-header">
       <h1 id="pageTitle"><i class="fa-solid fa-plus"></i> Create Task</h1>
@@ -194,112 +489,304 @@
     </div>
     <form id="taskForm" class="task-form">
       <div class="form-group">
-        <label for="title">Title</label>
-        <input type="text" id="title" placeholder="Title" required>
+        <label for="title"><i class="fa-solid fa-heading"></i> Task Title</label>
+        <input type="text" id="title" class="form-control" placeholder="Enter task title" required>
       </div>
+
       <div class="form-group">
-        <label for="description">Description</label>
-        <textarea id="description" placeholder="Description" required></textarea>
+        <label for="description"><i class="fa-solid fa-align-left"></i> Description</label>
+        <textarea id="description" class="form-control" placeholder="Enter task description" required></textarea>
       </div>
+
       <div class="form-row">
         <div class="form-group">
-          <label for="dueDate">Due Date</label>
-          <input type="date" id="dueDate" required>
+          <label><i class="fa-solid fa-calendar"></i> Due Date</label>
+          <div class="date-wrapper">
+            <input type="date" id="dueDate" class="form-control" required>
+            <i class="fa-solid fa-calendar-days date-icon"></i>
+          </div>
         </div>
+
         <div class="form-group">
-          <label for="priority">Priority</label>
-          <select id="priority" required>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
+          <label><i class="fa-solid fa-flag"></i> Priority</label>
+          <div class="priority-options">
+            <div class="priority-option">
+              <input type="radio" name="priority" id="low" value="low">
+              <label for="low">
+                <i class="fa-solid fa-arrow-down priority-icon"></i>
+                Low
+              </label>
+            </div>
+            <div class="priority-option">
+              <input type="radio" name="priority" id="medium" value="medium" checked>
+              <label for="medium">
+                <i class="fa-solid fa-equals priority-icon"></i>
+                Medium
+              </label>
+            </div>
+            <div class="priority-option">
+              <input type="radio" name="priority" id="high" value="high">
+              <label for="high">
+                <i class="fa-solid fa-arrow-up priority-icon"></i>
+                High
+              </label>
+            </div>
+          </div>
         </div>
       </div>
-      <!-- Image Upload Field -->
+
       <div class="form-group">
-        <label for="imageUpload">Upload Image</label>
-        <input type="file" id="imageUpload" accept="image/*">
+        <label><i class="fa-solid fa-list-check"></i> Status</label>
+        <div class="status-options">
+          <div class="status-option">
+            <input type="radio" name="status" id="pending" value="pending" checked>
+            <label for="pending">
+              <i class="fa-solid fa-hourglass-start status-icon"></i>
+              Pending
+            </label>
+          </div>
+          <div class="status-option">
+            <input type="radio" name="status" id="inProgress" value="in progress">
+            <label for="inProgress">
+              <i class="fa-solid fa-spinner status-icon"></i>
+              In Progress
+            </label>
+          </div>
+          <div class="status-option">
+            <input type="radio" name="status" id="completed" value="completed">
+            <label for="completed">
+              <i class="fa-solid fa-check-circle status-icon"></i>
+              Completed
+            </label>
+          </div>
+        </div>
       </div>
+
+      <div class="form-group">
+        <label><i class="fa-solid fa-image"></i> Upload Image</label>
+        <div class="file-upload-wrapper">
+          <div class="file-upload-icon">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <div class="file-upload-text">Drop your image here or click to browse</div>
+          <div class="file-upload-note">Supported formats: JPG, PNG, GIF (Max: 5MB)</div>
+          <input type="file" id="imageUpload" class="form-control" accept="image/*">
+          <div class="file-name" id="fileName"></div>
+        </div>
+      </div>
+
       <button type="submit" class="submit-btn" id="submitBtn">Create Task</button>
     </form>
   </div>
 
   <script>
-    // Ensure the user is logged in
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = 'login.html';
+    // Global variables
+    let isEditMode = false;
+    let currentTaskId = null;
+    let token = null;
+
+    // Show loading overlay
+    function showLoading() {
+      document.getElementById('loadingOverlay').style.display = 'flex';
     }
 
-    // Get the taskId from the URL (if present, we're in edit mode)
-    const params = new URLSearchParams(window.location.search);
-    const taskId = params.get('taskId');
+    // Hide loading overlay
+    function hideLoading() {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
 
-    document.addEventListener('DOMContentLoaded', async function() {
-      if (taskId) {
-        // Switch to edit mode: update header and button text
-        document.getElementById('pageTitle').innerHTML = '<i class="fa-solid fa-edit"></i> Update Task';
+    // Get authentication token
+    function getAuthToken() {
+      // First try localStorage
+      let token = localStorage.getItem('auth_token');
+
+      // If not found, try cookies
+      if (!token) {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+          const [name, value] = cookie.trim().split('=');
+          if (name === 'auth_token') {
+            token = value;
+            break;
+          }
+        }
+      }
+
+      return token;
+    }
+
+    // Redirect to login if not authenticated
+    function requireAuth() {
+      token = getAuthToken();
+      if (!token) {
+        window.location.href = 'login.html';
+        return false;
+      }
+      return true;
+    }
+
+    // Set default due date to tomorrow
+    function setDefaultDueDate() {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const formattedDate = tomorrow.toISOString().split('T')[0];
+      document.getElementById('dueDate').value = formattedDate;
+    }
+
+    // Fetch task by ID
+    function fetchTask(taskId) {
+      return fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+        .then(response => {
+          if (!response.ok) {
+            if (response.status === 401) {
+              // Token expired or invalid
+              localStorage.removeItem('auth_token');
+              window.location.href = 'login.html';
+              throw new Error('Your session has expired. Please login again.');
+            }
+            throw new Error('Failed to fetch task');
+          }
+          return response.json();
+        });
+    }
+
+    // File upload preview
+    function handleFileSelect() {
+      const fileInput = document.getElementById('imageUpload');
+      const fileName = document.getElementById('fileName');
+
+      fileInput.addEventListener('change', function () {
+        if (this.files && this.files[0]) {
+          fileName.textContent = this.files[0].name;
+          fileName.style.display = 'block';
+        } else {
+          fileName.style.display = 'none';
+        }
+      });
+    }
+
+    // Initialize the form
+    document.addEventListener('DOMContentLoaded', function () {
+      // Initialize file upload
+      handleFileSelect();
+
+      // Check if user is authenticated
+      if (!requireAuth()) {
+        return;
+      }
+
+      // Set default due date
+      setDefaultDueDate();
+
+      // Check if we're in edit mode by looking for taskId in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      currentTaskId = urlParams.get('taskId');
+      isEditMode = !!currentTaskId;
+
+      if (isEditMode) {
+        // Update UI for edit mode
+        document.getElementById('pageTitle').innerHTML = '<i class="fa-solid fa-edit"></i> Edit Task';
         document.getElementById('submitBtn').textContent = 'Update Task';
-        try {
-          const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
-            headers: { 'Authorization': token }
-          });
-          if (response.ok) {
-            const task = await response.json();
+
+        // Load task data
+        showLoading();
+        fetchTask(currentTaskId)
+          .then(task => {
+            // Populate form fields
             document.getElementById('title').value = task.title || '';
             document.getElementById('description').value = task.description || '';
+
             if (task.dueDate) {
               document.getElementById('dueDate').value = new Date(task.dueDate).toISOString().split('T')[0];
             }
-            document.getElementById('priority').value = task.priority || 'low';
-          } else {
-            console.error('Failed to fetch task data for editing:', response.statusText);
-          }
-        } catch (error) {
-          console.error('Error fetching task data:', error);
-        }
+
+            // Set priority radio button
+            const priorityValue = task.priority || 'medium';
+            document.querySelector(`input[name="priority"][value="${priorityValue}"]`).checked = true;
+
+            // Set status radio button
+            const statusValue = task.status || 'pending';
+            document.querySelector(`input[name="status"][value="${statusValue}"]`).checked = true;
+
+            hideLoading();
+          })
+          .catch(error => {
+            console.error('Error loading task:', error);
+            hideLoading();
+            alert('Failed to load task. Please try again.');
+          });
       }
     });
 
-    // Handle form submission (both create and update)
-    document.getElementById('taskForm').addEventListener('submit', async function(e) {
+    // Handle form submission
+    document.getElementById('taskForm').addEventListener('submit', function (e) {
       e.preventDefault();
+      showLoading();
 
       // Create a FormData object to handle file upload
       const formData = new FormData();
+
+      // Append form fields
       formData.append('title', document.getElementById('title').value);
       formData.append('description', document.getElementById('description').value);
       formData.append('dueDate', document.getElementById('dueDate').value);
-      formData.append('priority', document.getElementById('priority').value);
 
-      // Append the image file if selected
+      // Get selected priority from radio buttons
+      const selectedPriority = document.querySelector('input[name="priority"]:checked').value;
+      formData.append('priority', selectedPriority);
+
+      // Get selected status from radio buttons
+      const selectedStatus = document.querySelector('input[name="status"]:checked').value;
+      formData.append('status', selectedStatus);
+
+      // Append image file if selected
       const imageFile = document.getElementById('imageUpload').files[0];
       if (imageFile) {
         formData.append('image', imageFile);
       }
 
       // Determine endpoint and method based on mode
-      const url = taskId ? `http://localhost:5000/api/tasks/${taskId}` : 'http://localhost:5000/api/tasks';
-      const method = taskId ? 'PUT' : 'POST';
+      const url = isEditMode
+        ? `http://localhost:5000/api/tasks/${currentTaskId}`
+        : 'http://localhost:5000/api/tasks';
 
-      try {
-        const response = await fetch(url, {
-          method,
-          headers: {
-            'Authorization': token
-          },
-          body: formData
-        });
-        if (response.ok) {
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      // Send the request
+      fetch(url, {
+        method: method,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+        .then(response => {
+          if (!response.ok) {
+            if (response.status === 401) {
+              // Token expired or invalid
+              localStorage.removeItem('auth_token');
+              window.location.href = 'login.html';
+              throw new Error('Your session has expired. Please login again.');
+            }
+            throw new Error(`Failed to ${isEditMode ? 'update' : 'create'} task`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Redirect to dashboard on success
           window.location.href = 'dashboard.html';
-        } else {
-          alert('Failed to submit task.');
-        }
-      } catch (error) {
-        console.error('Error submitting task:', error);
-        alert('Error submitting task.');
-      }
+        })
+        .catch(error => {
+          console.error('Error saving task:', error);
+          hideLoading();
+          alert(`Failed to ${isEditMode ? 'update' : 'create'} task. Please try again.`);
+        });
     });
   </script>
 </body>
+
 </html>

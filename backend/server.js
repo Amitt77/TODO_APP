@@ -7,11 +7,22 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const multer = require('multer'); // For handling file uploads
 const fs = require('fs'); // For file system operations
+const http = require('http');
+
+// Secret key for JWT
+const SECRET_KEY = 'your-secret-key-should-be-long-and-secure';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use(express.static('frontend', {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
 app.use(cors());
 app.use(bodyParser.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve uploaded images
@@ -25,6 +36,59 @@ mongoose
   .connect('mongodb+srv://amit009:cwh2GpmhKHB7M582@todo.aw8vn.mongodb.net/')
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
+
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+  // Get the authorization header
+  const authHeader = req.headers['authorization'];
+
+  // Log the received header for debugging
+  console.log('Auth header received:', authHeader);
+
+  // Check if header exists and has the correct format
+  if (!authHeader) {
+    return res.status(401).json({ message: 'No authorization header provided' });
+  }
+
+  // Extract token from "Bearer token" format
+  let token;
+  if (authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7); // Remove 'Bearer ' prefix
+  } else {
+    token = authHeader; // Try to use the token as-is if no prefix
+  }
+
+  // Log the extracted token (first 10 chars for security)
+  console.log('Token extracted:', token?.substring(0, 10) + '...');
+
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  // Verify the token
+  try {
+    // Decode the token using your secret key
+    const decoded = jwt.verify(token, SECRET_KEY);
+
+    // Add the decoded user to the request object
+    req.user = decoded;
+
+    // Log successful verification
+    console.log('Token verified successfully for user:', decoded.username || decoded.email || decoded.id);
+
+    // Continue to the protected route
+    next();
+  } catch (error) {
+    console.error('Token verification error:', error.message);
+
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired' });
+    }
+
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+};
+
 // Multer Configuration for File Uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -64,6 +128,25 @@ const taskSchema = new mongoose.Schema({
 });
 const Task = mongoose.model('Task', taskSchema);
 
+// Message Schema
+const messageSchema = new mongoose.Schema({
+  senderId: mongoose.Schema.Types.ObjectId, // ID of the sender
+  receiverId: mongoose.Schema.Types.ObjectId, // ID of the receiver (for one-on-one chats)
+  groupId: mongoose.Schema.Types.ObjectId, // ID of the group (for group chats)
+  content: String, // Message content
+  timestamp: { type: Date, default: Date.now }, // Timestamp of the message
+});
+const Message = mongoose.model('Message', messageSchema);
+
+// Group Schema
+const groupSchema = new mongoose.Schema({
+  name: String, // Name of the group
+  members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Members of the group
+  createdBy: mongoose.Schema.Types.ObjectId, // ID of the group creator
+  timestamp: { type: Date, default: Date.now }, // Timestamp of group creation
+});
+const Group = mongoose.model('Group', groupSchema);
+
 // Routes
 
 // User Registration
@@ -84,7 +167,26 @@ app.post('/api/register', async (req, res) => {
     const user = new User({ username, email, password: hashedPassword });
     await user.save();
 
-    res.status(201).send('User registered');
+    // Create user object for token
+    const userForToken = {
+      id: user._id,
+      email: user.email,
+      username: user.username
+    };
+
+    // Generate JWT token
+    const token = jwt.sign(userForToken, SECRET_KEY, { expiresIn: '7d' });
+
+    // Return the token and user info
+    res.status(201).json({
+      message: 'User registered successfully',
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email
+      }
+    });
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).send('Error registering user');
@@ -96,244 +198,252 @@ app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find the user by email
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).send('Invalid credentials');
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Compare the password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(400).send('Invalid credentials');
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Generate a JWT token
-    const token = jwt.sign({ userId: user._id }, 'secret_key', { expiresIn: '1h' });
-    res.json({ token });
+    // Create user object to include in the token
+    const userForToken = {
+      id: user._id,
+      email: user.email,
+      username: user.username
+    };
+
+    // Generate JWT token with consistent options
+    const token = jwt.sign(userForToken, SECRET_KEY, { expiresIn: '7d' });
+
+    // Log token generation for debugging
+    console.log('Token generated for user:', user.email);
+    console.log('Token preview:', token.substring(0, 20) + '...');
+
+    // Return success response with token
+    res.status(200).json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        profileImage: user.profileImage
+      }
+    });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).send('Login error');
+    res.status(500).json({ message: 'Server error during login' });
   }
 });
 
 // Get User Info (for profile)
-app.get('/api/user', async (req, res) => {
+app.get('/api/user', authenticateToken, async (req, res) => {
   try {
-    const token = req.headers['authorization'];
-    if (!token) return res.status(401).send('No token provided');
-
-    // Verify the token
-    const decoded = jwt.verify(token, 'secret_key');
+    // The user ID is now available from the decoded token
+    const userId = req.user.id;
 
     // Find the user by ID
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await User.findById(userId).select('-password');
     if (!user) {
-      return res.status(404).send('User not found');
+      return res.status(404).json({ message: 'User not found' });
     }
 
     res.json(user);
   } catch (error) {
     console.error('Error fetching user:', error);
-    res.status(500).send('Error fetching user');
+    res.status(500).json({ message: 'Error fetching user' });
   }
 });
 
 // Update User Profile (including profile image)
 // Update User Profile (including profile image)
-// Update User Profile (including profile image)
-app.put('/api/user', upload.single('profileImage'), async (req, res) => {
+app.put('/api/user', [authenticateToken, upload.single('profileImage')], async (req, res) => {
   try {
-    const token = req.headers['authorization'];
-    if (!token) {
-      return res.status(401).send('No token provided');
-    }
+    // The user ID is available from the decoded token
+    const userId = req.user.id;
 
-    // Bearer <token> format, so we need to extract the token
-    const bearerToken = token.split(' ')[1]; // Token comes after "Bearer"
-
-    if (!bearerToken) {
-      return res.status(401).send('Invalid token');
-    }
-
-    // Verify the token
-    const decoded = jwt.verify(bearerToken, 'secret_key');
-    if (!decoded) {
-      return res.status(401).send('Invalid token');
-    }
-
-    // Proceed with the user update logic
+    // Extract fields from request body
     const { username, email, bio } = req.body;
-    const profileImage = req.file ? req.file.path : null;
+    const profileImage = req.file ? req.file.path : undefined;
 
+    // Check for duplicate username (if provided)
+    if (username) {
+      const existingUserByUsername = await User.findOne({
+        username,
+        _id: { $ne: userId }, // Exclude the current user
+      });
+      if (existingUserByUsername) {
+        return res.status(400).json({ message: 'Username is already taken' });
+      }
+    }
+
+    // Check for duplicate email (if provided)
+    if (email) {
+      const existingUserByEmail = await User.findOne({
+        email,
+        _id: { $ne: userId }, // Exclude the current user
+      });
+      if (existingUserByEmail) {
+        return res.status(400).json({ message: 'Email is already taken' });
+      }
+    }
+
+    // Prepare update data
     const updateData = {
-      username,
-      email,
-      bio,
-      ...(profileImage ? { profileImage } : {}),
+      ...(username && { username }),
+      ...(email && { email }),
+      ...(bio !== undefined && { bio }), // Allow empty bio
+      ...(profileImage && { profileImage }),
     };
 
-    const updatedUser = await User.findByIdAndUpdate(decoded.userId, updateData, { new: true });
+    // Update the user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select('-password');
+
     if (!updatedUser) {
-      return res.status(404).send('User not found');
+      return res.status(404).json({ message: 'User not found' });
     }
 
     res.json(updatedUser);
   } catch (error) {
     console.error('Error updating profile:', error);
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).send('Invalid token');
+    if (error.code === 11000) {
+      // Handle MongoDB duplicate key error
+      const field = Object.keys(error.keyValue)[0];
+      return res.status(400).json({ message: `${field} is already taken` });
     }
-    res.status(500).send('Error updating profile');
+    res.status(500).json({ message: 'Error updating profile' });
   }
 });
 
-
-
-// Create Task (Updated to handle image upload)
-app.post('/api/tasks', upload.single('image'), async (req, res) => {
+// Create Task (with image upload)
+app.post('/api/tasks', [authenticateToken, upload.single('image')], async (req, res) => {
   try {
-    const token = req.headers['authorization'];
-    if (!token) return res.status(401).send('No token provided');
-
-    // Verify the token
-    const decoded = jwt.verify(token, 'secret_key');
-
     const { title, description, dueDate, priority, status } = req.body;
-
-    // Create a new task
+    const userId = req.user.id;
     const task = new Task({
-      userId: decoded.userId,
+      userId,
       title,
       description,
       dueDate,
       priority,
       status: status || 'pending',
-      image: req.file ? req.file.path : null, // Save the image path
+      image: req.file ? req.file.path : undefined,
     });
     await task.save();
-
-    res.status(201).send('Task created');
+    res.status(201).json(task);
   } catch (error) {
     console.error('Error creating task:', error);
-    res.status(500).send('Error creating task');
+    res.status(500).json({ message: 'Error creating task' });
   }
 });
 
 // Get All Tasks
-app.get('/api/tasks', async (req, res) => {
+app.get('/api/tasks', authenticateToken, async (req, res) => {
   try {
-    const token = req.headers['authorization'];
-    if (!token) return res.status(401).send('No token provided');
-
-    // Verify the token
-    const decoded = jwt.verify(token, 'secret_key');
+    // Get the user ID from the decoded token
+    const userId = req.user.id;
 
     // Find tasks for the user
-    const tasks = await Task.find({ userId: decoded.userId });
+    const tasks = await Task.find({ userId });
     res.json(tasks);
   } catch (error) {
     console.error('Error fetching tasks:', error);
-    res.status(500).send('Error fetching tasks');
+    res.status(500).json({ message: 'Error fetching tasks' });
   }
 });
 
 // Get Single Task by ID (for editing)
-app.get('/api/tasks/:id', async (req, res) => {
+app.get('/api/tasks/:id', authenticateToken, async (req, res) => {
   try {
-    const token = req.headers['authorization'];
-    if (!token) return res.status(401).send('No token provided');
-
-    // Verify the token
-    const decoded = jwt.verify(token, 'secret_key');
+    // Get the user ID from the decoded token
+    const userId = req.user.id;
 
     // Find the task by ID and user ID
-    const task = await Task.findOne({ _id: req.params.id, userId: decoded.userId });
+    const task = await Task.findOne({ _id: req.params.id, userId });
     if (!task) {
-      return res.status(404).send('Task not found');
+      return res.status(404).json({ message: 'Task not found' });
     }
 
     res.json(task);
   } catch (error) {
     console.error('Error fetching task:', error);
-    res.status(500).send('Error fetching task');
+    res.status(500).json({ message: 'Error fetching task' });
   }
 });
 
-// Update Task (Updated to handle image upload)
-app.put('/api/tasks/:id', upload.single('image'), async (req, res) => {
+// Update Task (with image upload)
+app.put('/api/tasks/:id', [authenticateToken, upload.single('image')], async (req, res) => {
   try {
+    const userId = req.user.id;
     const { title, description, dueDate, priority, status } = req.body;
-
-    // Prepare update data
     const updateData = {
-      title,
-      description,
-      dueDate,
-      priority,
-      ...(status ? { status } : {}),
+      ...(title && { title }),
+      ...(description && { description }),
+      ...(dueDate && { dueDate }),
+      ...(priority && { priority }),
+      ...(status && { status }),
     };
-
-    // If a new image is uploaded, update the image path
     if (req.file) {
       updateData.image = req.file.path;
     }
-
-    // Update the task in the database
-    await Task.findByIdAndUpdate(req.params.id, updateData);
-    res.send('Task updated');
+    const updatedTask = await Task.findOneAndUpdate(
+      { _id: req.params.id, userId },
+      updateData,
+      { new: true }
+    );
+    if (!updatedTask) {
+      return res.status(404).json({ message: 'Task not found or unauthorized' });
+    }
+    res.json(updatedTask);
   } catch (error) {
     console.error('Error updating task:', error);
-    res.status(500).send('Error updating task');
+    res.status(500).json({ message: 'Error updating task' });
   }
 });
 
 // Delete Task
-app.delete('/api/tasks/:id', async (req, res) => {
+app.delete('/api/tasks/:id', authenticateToken, async (req, res) => {
   try {
-    await Task.findByIdAndDelete(req.params.id);
-    res.send('Task deleted');
+    // Get the user ID from the decoded token
+    const userId = req.user.id;
+
+    // Find and delete the task
+    const deletedTask = await Task.findOneAndDelete({ _id: req.params.id, userId });
+
+    if (!deletedTask) {
+      return res.status(404).json({ message: 'Task not found or unauthorized' });
+    }
+
+    res.json({ message: 'Task deleted successfully' });
   } catch (error) {
     console.error('Error deleting task:', error);
-    res.status(500).send('Error deleting task');
+    res.status(500).json({ message: 'Error deleting task' });
   }
 });
 
-// Catch-All Route: Serve login.html as fallback
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendPath, 'login.html'));
-});
-
-
-///for message optoin
-// Message Schema
-const messageSchema = new mongoose.Schema({
-  senderId: mongoose.Schema.Types.ObjectId, // ID of the sender
-  receiverId: mongoose.Schema.Types.ObjectId, // ID of the receiver (for one-on-one chats)
-  groupId: mongoose.Schema.Types.ObjectId, // ID of the group (for group chats)
-  content: String, // Message content
-  timestamp: { type: Date, default: Date.now }, // Timestamp of the message
-});
-const Message = mongoose.model('Message', messageSchema);
-
-// Group Schema
-const groupSchema = new mongoose.Schema({
-  name: String, // Name of the group
-  members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Members of the group
-  createdBy: mongoose.Schema.Types.ObjectId, // ID of the group creator
-  timestamp: { type: Date, default: Date.now }, // Timestamp of group creation
-});
-const Group = mongoose.model('Group', groupSchema);
-
-///
 // Send a message (one-on-one or group)
-app.post('/api/messages', async (req, res) => {
+app.post('/api/messages', authenticateToken, async (req, res) => {
   try {
-    const { senderId, receiverId, groupId, content } = req.body;
+    const { receiverId, groupId, content } = req.body;
+    const senderId = req.user.id; // Get from token
 
     // Validate input
-    if (!senderId || !content || (!receiverId && !groupId)) {
-      return res.status(400).send('Missing required fields');
+    if (!content || (!receiverId && !groupId)) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
 
     // Create a new message
@@ -348,18 +458,24 @@ app.post('/api/messages', async (req, res) => {
     res.status(201).json(message);
   } catch (error) {
     console.error('Error sending message:', error);
-    res.status(500).send('Error sending message');
+    res.status(500).json({ message: 'Error sending message' });
   }
 });
 
 // Create a group
-app.post('/api/groups', async (req, res) => {
+app.post('/api/groups', authenticateToken, async (req, res) => {
   try {
-    const { name, members, createdBy } = req.body;
+    const { name, members } = req.body;
+    const createdBy = req.user.id; // Get from token
 
     // Validate input
-    if (!name || !members || !createdBy) {
-      return res.status(400).send('Missing required fields');
+    if (!name || !members) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    // Make sure creator is included in members
+    if (!members.includes(createdBy)) {
+      members.push(createdBy);
     }
 
     // Create a new group
@@ -373,19 +489,15 @@ app.post('/api/groups', async (req, res) => {
     res.status(201).json(group);
   } catch (error) {
     console.error('Error creating group:', error);
-    res.status(500).send('Error creating group');
+    res.status(500).json({ message: 'Error creating group' });
   }
 });
 
 // Get messages for a user (one-on-one or group)
-app.get('/api/messages', async (req, res) => {
+app.get('/api/messages', authenticateToken, async (req, res) => {
   try {
-    const { userId, groupId } = req.query;
-
-    // Validate input
-    if (!userId) {
-      return res.status(400).send('User ID is required');
-    }
+    const userId = req.user.id; // Get from token
+    const { groupId } = req.query;
 
     // Fetch messages
     let messages;
@@ -405,33 +517,33 @@ app.get('/api/messages', async (req, res) => {
     res.json(messages);
   } catch (error) {
     console.error('Error fetching messages:', error);
-    res.status(500).send('Error fetching messages');
+    res.status(500).json({ message: 'Error fetching messages' });
   }
 });
 
 // Get all groups for a user
-app.get('/api/groups', async (req, res) => {
+app.get('/api/groups', authenticateToken, async (req, res) => {
   try {
-    const { userId } = req.query;
-
-    // Validate input
-    if (!userId) {
-      return res.status(400).send('User ID is required');
-    }
+    const userId = req.user.id; // Get from token
 
     // Fetch groups where the user is a member
     const groups = await Group.find({ members: userId });
     res.json(groups);
   } catch (error) {
     console.error('Error fetching groups:', error);
-    res.status(500).send('Error fetching groups');
+    res.status(500).json({ message: 'Error fetching groups' });
   }
 });
 
+// Catch-All Route: Serve login.html as fallback
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'login.html'));
+});
 
-///socket.io
-const http = require('http');
+// Create HTTP server
 const server = http.createServer(app);
+
+// Socket.IO setup
 const io = require('socket.io')(server, {
   cors: {
     origin: '*', // Allow all origins (update this in production)
@@ -450,20 +562,24 @@ io.on('connection', (socket) => {
 
   // Send a message
   socket.on('sendMessage', async (data) => {
-    const { senderId, receiverId, groupId, content } = data;
+    try {
+      const { senderId, receiverId, groupId, content } = data;
 
-    // Save the message to the database
-    const message = new Message({
-      senderId,
-      receiverId,
-      groupId,
-      content,
-    });
-    await message.save();
+      // Save the message to the database
+      const message = new Message({
+        senderId,
+        receiverId,
+        groupId,
+        content,
+      });
+      await message.save();
 
-    // Emit the message to the room
-    const roomId = groupId || `${senderId}-${receiverId}`;
-    io.to(roomId).emit('receiveMessage', message);
+      // Emit the message to the room
+      const roomId = groupId || `${senderId}-${receiverId}`;
+      io.to(roomId).emit('receiveMessage', message);
+    } catch (error) {
+      console.error('Error processing socket message:', error);
+    }
   });
 
   // Disconnect
