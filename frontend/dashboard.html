@@ -626,6 +626,71 @@
       font-weight: 500;
     }
 
+    /* Notification styles */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-white);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 1001;
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .notification.success {
+      border-left: 4px solid var(--success);
+    }
+
+    .notification.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    .notification-icon {
+      font-size: 20px;
+    }
+
+    .notification.success .notification-icon {
+      color: var(--success);
+    }
+
+    .notification.error .notification-icon {
+      color: var(--danger);
+    }
+
+    .notification-content {
+      flex: 1;
+    }
+
+    .notification-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .notification-message {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .notification-close {
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+
+    .notification-close:hover {
+      color: var(--text-dark);
+    }
+
     /* Responsive */
     @media (max-width: 1024px) {
       .layout {
@@ -695,6 +760,9 @@
 </head>
 
 <body>
+  <!-- Notification Container -->
+  <div id="notificationContainer"></div>
+
   <!-- Debug Panel -->
   <div id="debug-panel">
     <h4>Debug Panel</h4>
@@ -783,8 +851,6 @@
               <span id="headerUserInitials"></span>
             </div>
             <span id="headerUsername">Loading...</span>
-            <button class="logout-btn" style="margin-top: 0; margin-left: 12px;" onclick="logoutUser()">Sign
-              Out</button>
           </div>
         </div>
       </div>
@@ -827,6 +893,70 @@
     // Global variables
     let allTasks = [];
     let token = null;
+    let currentFilter = 'all';
+
+    // Notification system
+    function showNotification(type, title, message, duration = 3000) {
+      const container = document.getElementById('notificationContainer');
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      
+      const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+      
+      notification.innerHTML = `
+        <i class="fa-solid ${icon} notification-icon"></i>
+        <div class="notification-content">
+          <div class="notification-title">${title}</div>
+          <div class="notification-message">${message}</div>
+        </div>
+        <i class="fa-solid fa-xmark notification-close" onclick="this.parentElement.remove()"></i>
+      `;
+      
+      container.appendChild(notification);
+      
+      // Trigger reflow
+      notification.offsetHeight;
+      
+      // Show notification
+      notification.classList.add('show');
+      
+      // Auto remove after duration
+      setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+      }, duration);
+    }
+
+    // Function to require authentication
+    function requireAuth() {
+      token = getAuthToken();
+      if (!token) {
+        window.location.href = 'login.html';
+        return false;
+      }
+      return true;
+    }
+
+    // Function to handle errors
+    function handleError(error) {
+      console.error('Error:', error);
+      hideLoading();
+      // Show error state
+      const tasksContainer = document.getElementById('tasks');
+      tasksContainer.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="fa-solid fa-exclamation-triangle"></i>
+          </div>
+          <h2 class="empty-title">Error Loading Data</h2>
+          <p class="empty-subtitle">${error.message || 'An error occurred. Please try again.'}</p>
+          <button class="create-btn" onclick="location.reload()">
+            <i class="fa-solid fa-refresh"></i>
+            Refresh Page
+          </button>
+        </div>
+      `;
+    }
 
     // Debug functions
     function toggleDebugPanel() {
@@ -953,6 +1083,53 @@
       return '';
     }
 
+    // Check if task is expired
+    function isTaskExpired(task) {
+      if (task.status === 'completed') return false;
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dueDate = new Date(task.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      return dueDate < today;
+    }
+
+    // Update task status
+    async function updateTaskStatus(taskId, newStatus) {
+      try {
+        const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
+
+        if (!response.ok) throw new Error('Failed to update task status');
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Error updating task status:', error);
+        throw error;
+      }
+    }
+
+    // Check and update expired tasks
+    async function checkExpiredTasks(tasks) {
+      const updates = [];
+      for (const task of tasks) {
+        if (task.status !== 'completed' && task.status !== 'expired' && isTaskExpired(task)) {
+          updates.push(updateTaskStatus(task._id, 'expired'));
+        }
+      }
+      if (updates.length > 0) {
+        await Promise.all(updates);
+        // Refresh tasks after updates
+        fetchTasks().then(renderTasks);
+      }
+    }
+
     // Render tasks
     function renderTasks(tasks) {
       const tasksContainer = document.getElementById('tasks');
@@ -1020,6 +1197,9 @@
         .then(tasks => {
           allTasks = tasks;
 
+          // Check for expired tasks first
+          checkExpiredTasks(tasks);
+
           // Filter tasks based on selection
           let filteredTasks = tasks;
 
@@ -1034,7 +1214,8 @@
             );
           } else if (filter === 'expired') {
             filteredTasks = tasks.filter(task =>
-              task.status.toLowerCase() === 'expired'
+              task.status.toLowerCase() === 'expired' ||
+              (!task.completed && isTaskExpired(task))
             );
           }
 
@@ -1044,22 +1225,21 @@
         .catch(error => {
           console.error('Error filtering tasks:', error);
           hideLoading();
-
-          // Show a simple empty state on error
+          // Show error state
           const tasksContainer = document.getElementById('tasks');
           tasksContainer.innerHTML = `
-              <div class="empty-state">
-                <div class="empty-icon">
-                  <i class="fa-solid fa-exclamation-triangle"></i>
-                </div>
-                <h2 class="empty-title">Error Loading Tasks</h2>
-                <p class="empty-subtitle">${error.message || 'Failed to load tasks. Please try again.'}</p>
-                <button class="create-btn" onclick="location.reload()">
-                  <i class="fa-solid fa-refresh"></i>
-                  Refresh Page
-                </button>
+            <div class="empty-state">
+              <div class="empty-icon">
+                <i class="fa-solid fa-exclamation-triangle"></i>
               </div>
-            `;
+              <h2 class="empty-title">Error Loading Tasks</h2>
+              <p class="empty-subtitle">${error.message || 'Failed to load tasks. Please try again.'}</p>
+              <button class="create-btn" onclick="location.reload()">
+                <i class="fa-solid fa-refresh"></i>
+                Refresh Page
+              </button>
+            </div>
+          `;
         });
     }
 
@@ -1077,15 +1257,18 @@
     // Edit task
     function editTask(taskId, event) {
       if (event) {
-        event.stopPropagation(); // Prevent event bubbling
+        event.stopPropagation();
       }
+      // Store current filter and page URL before navigating
+      localStorage.setItem('previousPage', window.location.pathname);
+      localStorage.setItem('previousFilter', currentFilter);
       window.location.href = `createTask.html?taskId=${taskId}`;
     }
 
     // Delete task
     function deleteTask(taskId, event) {
       if (event) {
-        event.stopPropagation(); // Prevent event bubbling
+        event.stopPropagation();
       }
 
       if (!confirm('Are you sure you want to delete this task?')) {
@@ -1094,7 +1277,6 @@
 
       showLoading();
 
-      // Delete task from API
       fetch(`http://localhost:5000/api/tasks/${taskId}`, {
         method: 'DELETE',
         headers: {
@@ -1105,31 +1287,29 @@
           if (!response.ok) {
             throw new Error('Failed to delete task');
           }
-
-          // Refresh tasks after deletion
           return fetchTasks();
         })
         .then(tasks => {
-          allTasks = tasks; // Update cached tasks
+          allTasks = tasks;
           renderTasks(tasks);
           hideLoading();
+          showNotification('success', 'Success', 'Task deleted successfully');
         })
         .catch(error => {
           console.error('Error deleting task:', error);
           hideLoading();
-          alert('Failed to delete task. Please try again.');
+          showNotification('error', 'Error', 'Failed to delete task. Please try again.');
         });
     }
 
     // Mark task as completed
     function markCompleted(taskId, event) {
       if (event) {
-        event.stopPropagation(); // Prevent event bubbling
+        event.stopPropagation();
       }
 
       showLoading();
 
-      // Update task status to completed
       fetch(`http://localhost:5000/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
@@ -1142,19 +1322,18 @@
           if (!response.ok) {
             throw new Error('Failed to update task status');
           }
-
-          // Refresh tasks after update
           return fetchTasks();
         })
         .then(tasks => {
-          allTasks = tasks; // Update cached tasks
+          allTasks = tasks;
           renderTasks(tasks);
           hideLoading();
+          showNotification('success', 'Success', 'Task marked as completed');
         })
         .catch(error => {
           console.error('Error updating task status:', error);
           hideLoading();
-          alert('Failed to update task status. Please try again.');
+          showNotification('error', 'Error', 'Failed to update task status. Please try again.');
         });
     }
 
@@ -1236,85 +1415,64 @@
     }
 
     // Initialize dashboard
-    document.addEventListener('DOMContentLoaded', function () {
-      console.log('Initializing dashboard');
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check authentication first
+      if (!requireAuth()) return;
 
-      // Check if user is authenticated
-      token = getAuthToken();
-      if (!token) {
-        console.error('No auth token found, redirecting to login');
-        window.location.href = 'login.html';
-        return;
-      }
-
+      // Show loading state
       showLoading();
 
-      // Setup filter tabs
-      document.querySelectorAll('.filter-option').forEach(option => {
-        option.addEventListener('click', function () {
+      // Set up filter event listeners
+      const filterOptions = document.querySelectorAll('.filter-option');
+      filterOptions.forEach(option => {
+        option.addEventListener('click', function() {
           // Remove active class from all options
-          document.querySelectorAll('.filter-option').forEach(opt => opt.classList.remove('active'));
-
+          filterOptions.forEach(opt => opt.classList.remove('active'));
           // Add active class to clicked option
           this.classList.add('active');
-
-          // Filter tasks
-          const filter = this.getAttribute('data-filter');
-          filterTasks(filter);
+          // Update current filter
+          currentFilter = this.getAttribute('data-filter');
+          // Apply filter
+          filterTasks(currentFilter);
         });
       });
 
-      // Close modal when clicking outside
-      window.onclick = function (event) {
-        const modal = document.getElementById('imageModal');
+      // Set up search functionality
+      setupSearch();
+
+      // Close image modal when clicking outside
+      const modal = document.getElementById('imageModal');
+      modal.addEventListener('click', function(event) {
         if (event.target === modal) {
           closeImageModal();
         }
-      };
+      });
 
-      // Fetch user data
-      fetchUserProfile()
-        .then(user => {
-          // Update user profile
-          updateUserProfile(user);
+      // Check for previous filter
+      const previousFilter = localStorage.getItem('previousFilter');
+      if (previousFilter) {
+        currentFilter = previousFilter;
+        localStorage.removeItem('previousFilter');
+        // Activate the corresponding filter option
+        const filterOption = document.querySelector(`.filter-option[data-filter="${previousFilter}"]`);
+        if (filterOption) {
+          filterOptions.forEach(opt => opt.classList.remove('active'));
+          filterOption.classList.add('active');
+        }
+      }
 
-          // Now fetch tasks
-          return fetchTasks();
-        })
-        .then(tasks => {
-          console.log('Tasks loaded:', tasks ? tasks.length : 0, 'tasks found');
-
-          // Store all tasks for client-side filtering
+      // Load initial data
+      Promise.all([fetchUserProfile(), fetchTasks()])
+        .then(([user, tasks]) => {
           allTasks = tasks;
-
-          // Render tasks
-          renderTasks(tasks);
-
-          // Setup search functionality
-          setupSearch();
-
-          hideLoading();
+          updateUserProfile(user);
+          return checkExpiredTasks(tasks);
         })
-        .catch(error => {
-          console.error('Error initializing dashboard:', error);
-          hideLoading();
-
-          // Show error message
-          const tasksContainer = document.getElementById('tasks');
-          tasksContainer.innerHTML = `
-              <div class="empty-state">
-                <div class="empty-icon">
-                  <i class="fa-solid fa-exclamation-triangle"></i>
-                </div>
-                <h2 class="empty-title">Connection Issue</h2>
-                <p class="empty-subtitle">${error.message || 'Failed to connect to server. Please try again.'}</p>
-                <button class="create-btn" onclick="logoutUser()">
-                  <i class="fa-solid fa-sign-out"></i>
-                  Sign Out and Try Again
-                </button>
-              </div>
-            `;
-        });
+        .then(() => {
+          // Show tasks with current filter
+          filterTasks(currentFilter);
+        })
+        .catch(handleError);
     });
   </script>
 </body>

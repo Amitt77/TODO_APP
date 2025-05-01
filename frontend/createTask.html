@@ -470,10 +470,78 @@
         flex-direction: column;
       }
     }
+
+    /* Notification styles */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-white);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 1001;
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .notification.success {
+      border-left: 4px solid var(--success);
+    }
+
+    .notification.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    .notification-icon {
+      font-size: 20px;
+    }
+
+    .notification.success .notification-icon {
+      color: var(--success);
+    }
+
+    .notification.error .notification-icon {
+      color: var(--danger);
+    }
+
+    .notification-content {
+      flex: 1;
+    }
+
+    .notification-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .notification-message {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .notification-close {
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+
+    .notification-close:hover {
+      color: var(--text-dark);
+    }
   </style>
 </head>
 
 <body>
+  <!-- Notification Container -->
+  <div id="notificationContainer"></div>
+
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loadingOverlay">
     <div class="spinner-container">
@@ -485,7 +553,7 @@
   <div class="task-container">
     <div class="task-header">
       <h1 id="pageTitle"><i class="fa-solid fa-plus"></i> Create Task</h1>
-      <a href="dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back</a>
+      <button onclick="goBack()" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back</button>
     </div>
     <form id="taskForm" class="task-form">
       <div class="form-group">
@@ -584,6 +652,50 @@
     let isEditMode = false;
     let currentTaskId = null;
     let token = null;
+    let previousPage = document.referrer;
+
+    // Notification system
+    function showNotification(type, title, message, duration = 3000) {
+      const container = document.getElementById('notificationContainer');
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      
+      const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+      
+      notification.innerHTML = `
+        <i class="fa-solid ${icon} notification-icon"></i>
+        <div class="notification-content">
+          <div class="notification-title">${title}</div>
+          <div class="notification-message">${message}</div>
+        </div>
+        <i class="fa-solid fa-xmark notification-close" onclick="this.parentElement.remove()"></i>
+      `;
+      
+      container.appendChild(notification);
+      
+      // Trigger reflow
+      notification.offsetHeight;
+      
+      // Show notification
+      notification.classList.add('show');
+      
+      // Auto remove after duration
+      setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+      }, duration);
+    }
+
+    // Function to handle back button click
+    function goBack() {
+      const storedPreviousPage = localStorage.getItem('previousPage');
+      if (storedPreviousPage) {
+        localStorage.removeItem('previousPage');
+        window.location.href = storedPreviousPage;
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+    }
 
     // Show loading overlay
     function showLoading() {
@@ -722,10 +834,22 @@
       }
     });
 
+    // Validate due date
+    function validateDueDate(dueDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const dueDateObj = new Date(dueDate);
+      dueDateObj.setHours(0, 0, 0, 0);
+      return dueDateObj >= today;
+    }
+
     // Handle form submission
     document.getElementById('taskForm').addEventListener('submit', function (e) {
       e.preventDefault();
       showLoading();
+
+      const dueDate = document.getElementById('dueDate').value;
+      const isValidDate = validateDueDate(dueDate);
 
       // Create a FormData object to handle file upload
       const formData = new FormData();
@@ -733,14 +857,17 @@
       // Append form fields
       formData.append('title', document.getElementById('title').value);
       formData.append('description', document.getElementById('description').value);
-      formData.append('dueDate', document.getElementById('dueDate').value);
+      formData.append('dueDate', dueDate);
 
       // Get selected priority from radio buttons
       const selectedPriority = document.querySelector('input[name="priority"]:checked').value;
       formData.append('priority', selectedPriority);
 
-      // Get selected status from radio buttons
-      const selectedStatus = document.querySelector('input[name="status"]:checked').value;
+      // Set status based on due date
+      let selectedStatus = document.querySelector('input[name="status"]:checked').value;
+      if (!isValidDate && selectedStatus !== 'completed') {
+        selectedStatus = 'expired';
+      }
       formData.append('status', selectedStatus);
 
       // Append image file if selected
@@ -767,7 +894,6 @@
         .then(response => {
           if (!response.ok) {
             if (response.status === 401) {
-              // Token expired or invalid
               localStorage.removeItem('auth_token');
               window.location.href = 'login.html';
               throw new Error('Your session has expired. Please login again.');
@@ -777,13 +903,19 @@
           return response.json();
         })
         .then(data => {
-          // Redirect to dashboard on success
-          window.location.href = 'dashboard.html';
+          hideLoading();
+          showNotification('success', 'Success', 
+            isEditMode ? 'Task updated successfully' : 'Task created successfully');
+          // Wait for notification to show before redirecting
+          setTimeout(() => {
+            goBack();
+          }, 1500);
         })
         .catch(error => {
           console.error('Error saving task:', error);
           hideLoading();
-          alert(`Failed to ${isEditMode ? 'update' : 'create'} task. Please try again.`);
+          showNotification('error', 'Error', 
+            `Failed to ${isEditMode ? 'update' : 'create'} task. Please try again.`);
         });
     });
   </script>

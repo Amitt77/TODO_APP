@@ -546,6 +546,71 @@
       }
     }
 
+    /* Notification styles */
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-white);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 1001;
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+    }
+
+    .notification.show {
+      transform: translateX(0);
+    }
+
+    .notification.success {
+      border-left: 4px solid var(--success);
+    }
+
+    .notification.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    .notification-icon {
+      font-size: 20px;
+    }
+
+    .notification.success .notification-icon {
+      color: var(--success);
+    }
+
+    .notification.error .notification-icon {
+      color: var(--danger);
+    }
+
+    .notification-content {
+      flex: 1;
+    }
+
+    .notification-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .notification-message {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .notification-close {
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: color 0.2s;
+    }
+
+    .notification-close:hover {
+      color: var(--text-dark);
+    }
+
     /* Responsive */
     @media (max-width: 1024px) {
       .layout {
@@ -610,6 +675,9 @@
 </head>
 
 <body>
+  <!-- Notification Container -->
+  <div id="notificationContainer"></div>
+
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loadingOverlay">
     <div class="spinner"></div>
@@ -678,8 +746,6 @@
               <span id="headerUserInitials"><i class="fa-solid fa-user"></i></span>
             </div>
             <span id="headerUsername">Loading...</span>
-            <button class="logout-btn" style="margin-top: 0; margin-left: 12px;" onclick="logoutUser()">Sign
-              Out</button>
           </div>
         </div>
       </div>
@@ -759,9 +825,41 @@
 
   <script>
     // Global variables
-    let tasksData = [];
-    let selectedTaskId = null;
+    let allTasks = [];
     let token = null;
+    let currentFilter = 'all';
+
+    // Notification system
+    function showNotification(type, title, message, duration = 3000) {
+      const container = document.getElementById('notificationContainer');
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      
+      const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+      
+      notification.innerHTML = `
+        <i class="fa-solid ${icon} notification-icon"></i>
+        <div class="notification-content">
+          <div class="notification-title">${title}</div>
+          <div class="notification-message">${message}</div>
+        </div>
+        <i class="fa-solid fa-xmark notification-close" onclick="this.parentElement.remove()"></i>
+      `;
+      
+      container.appendChild(notification);
+      
+      // Trigger reflow
+      notification.offsetHeight;
+      
+      // Show notification
+      notification.classList.add('show');
+      
+      // Auto remove after duration
+      setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+      }, duration);
+    }
 
     // Show loading overlay
     function showLoading() {
@@ -921,7 +1019,7 @@
     // Show task details popup
     function showTaskDetails(taskId) {
       selectedTaskId = taskId;
-      const task = tasksData.find(t => t._id === taskId);
+      const task = allTasks.find(t => t._id === taskId);
       if (!task) return;
 
       // Fill in details
@@ -961,8 +1059,11 @@
     // Edit task
     function editTask(taskId, event) {
       if (event) {
-        event.stopPropagation(); // Prevent opening details
+        event.stopPropagation();
       }
+      // Store current filter and page URL before navigating
+      localStorage.setItem('previousPage', window.location.pathname);
+      localStorage.setItem('previousFilter', currentFilter);
       window.location.href = `createTask.html?taskId=${taskId}`;
     }
 
@@ -976,7 +1077,7 @@
     // Delete task
     function deleteTask(taskId, event) {
       if (event) {
-        event.stopPropagation(); // Prevent opening details
+        event.stopPropagation();
       }
 
       if (!confirm('Are you sure you want to delete this task?')) {
@@ -987,22 +1088,26 @@
 
       fetch(`http://localhost:5000/api/tasks/${taskId}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`
+        }
       })
         .then(response => {
           if (!response.ok) {
             throw new Error('Failed to delete task');
           }
-          // Remove from local array
-          tasksData = tasksData.filter(task => task._id !== taskId);
-          // Re-render tasks
-          renderTasks(tasksData);
+          return fetchTasks();
+        })
+        .then(tasks => {
+          allTasks = tasks;
+          renderTasks(tasks);
           hideLoading();
+          showNotification('success', 'Success', 'Task deleted successfully');
         })
         .catch(error => {
           console.error('Error deleting task:', error);
           hideLoading();
-          alert('Error occurred while deleting task.');
+          showNotification('error', 'Error', 'Failed to delete task. Please try again.');
         });
     }
 
@@ -1072,7 +1177,7 @@
           updateUserProfile(user);
 
           // Store tasks data
-          tasksData = tasks;
+          allTasks = tasks;
 
           // Render tasks
           renderTasks(tasks);
