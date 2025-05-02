@@ -1,4 +1,5 @@
 // config.js - Configuration file for your server
+require('dotenv').config();
 
 module.exports = {
     // Database configuration
@@ -9,11 +10,11 @@ module.exports = {
 
     // JWT configuration
     secretKey: process.env.JWT_SECRET || 'your-secret-key-should-be-long-and-secure',
-    tokenExpiry: '7d',
+    tokenExpiry: process.env.TOKEN_EXPIRY || '7d',
 
     // Upload configuration
-    uploadDir: 'uploads',
-    maxFileSize: 5 * 1024 * 1024, // 5MB
+    uploadDir: process.env.UPLOAD_DIR || 'uploads',
+    maxFileSize: process.env.MAX_FILE_SIZE || 5 * 1024 * 1024, // 5MB
 
     // Allowed file types
     allowedFileTypes: ['image/jpeg', 'image/png', 'image/gif'],

@@ -8,6 +8,7 @@ const path = require('path');
 const multer = require('multer'); // For handling file uploads
 const fs = require('fs'); // For file system operations
 const http = require('http');
+const config = require('./config');
 
 // Secret key for JWT
 const SECRET_KEY = 'your-secret-key-should-be-long-and-secure';
@@ -33,7 +34,7 @@ app.use(express.static(frontendPath));
 
 // MongoDB Connection
 mongoose
-  .connect('mongodb+srv://amit009:cwh2GpmhKHB7M582@todo.aw8vn.mongodb.net/')
+  .connect(config.dbUri)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
